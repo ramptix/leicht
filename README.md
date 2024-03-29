@@ -1,1 +1,4 @@
-fyi, leicht means "light" or "thin light."
+# leicht
+
+Leicht, /leícht/ or "light" in English.
+
