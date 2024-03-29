@@ -1,0 +1,1 @@
+fyi, leicht means "light" or "thin light."
