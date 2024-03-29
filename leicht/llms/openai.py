@@ -1,15 +1,29 @@
 """The OpenAI LLM."""
 
+import os
 from typing import Optional
 
 from .base import BaseLLM
+
+try:
+    import dotenv
+    dotenv.load_dotenv()
+except ImportError:
+    dotenv = None # unused from now on
 
 
 class OpenAI(BaseLLM):
     """Represents an OpenAI.
     
     Args:
-        api_key: 
+        api_key (str, optional): The API key.
     """
-    def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key
+
+    __slots__ = (
+        "api_key",
+    )
+    api_key: str
+
+    def __init__(self, *, api_key: Optional[str] = None):
+        # if `api_key` is not provided, use the env
+        self.api_key = api_key or os.environ['OPENAI_API_KEY']
