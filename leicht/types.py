@@ -1,9 +1,9 @@
-from typing import Any, List, Literal, Optional, Type, Union
+from typing import Any, List, Literal, Optional, Union
 from typing_extensions import NotRequired, TypedDict
 
 from .llms import BaseLLM
 
-LLMType = Union[Literal["openai", "groq"], Type[BaseLLM]]
+LLMType = Union[Literal["openai", "groq"], BaseLLM]
 
 class Message(TypedDict):
     role: Literal["user", "assistant", "system"]

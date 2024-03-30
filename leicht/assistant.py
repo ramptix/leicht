@@ -9,8 +9,8 @@ llm_mapping = {
     "groq": Groq
 }
 
-def get_llm(llm: LLMType) -> Type[BaseLLM]:
-    return llm_mapping[llm] if isinstance(llm, str) else llm
+def get_llm(llm: LLMType) -> BaseLLM:
+    return llm_mapping[llm]() if isinstance(llm, str) else llm
 
 class Assistant:
     """Represents an assistant.
@@ -24,10 +24,10 @@ class Assistant:
         "llm",
         "messages"
     )
-    llm: Type[BaseLLM]
+    llm: BaseLLM
     messages: List[Message]
 
-    def __init__(self, description: str, llm: LLMType = "openai"):
+    def __init__(self, description: str, llm: LLMType):
         self.llm = get_llm(llm)
         self.messages = [{
             "role": "system",
