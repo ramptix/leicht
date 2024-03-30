@@ -49,6 +49,10 @@ class BaseResponse:
     def __repr__(self) -> str:
         # using json.__name__ can suppress AttributeError's
         if json.__name__ == "json":
-            return json.dumps(self._data)
+            return "GroqResponse(" + json.dumps(self._data) + ")"
         else:
-            return json.dumps(self._data, option=json.OPT_INDENT_2).decode('utf-8')
+            return (
+                "GroqResponse(" +
+                json.dumps(self._data, option=json.OPT_INDENT_2).decode('utf-8') + 
+                ")"
+            )
