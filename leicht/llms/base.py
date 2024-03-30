@@ -1,20 +1,9 @@
 from abc import ABC
-from typing import Literal, Tuple, Iterable, Union, overload
-
-StreamingDict = Iterable[dict]
-RunResult = Union[dict, StreamingDict]
+from typing import Iterable
 
 class BaseLLM(ABC):
     """Represents a base LLM (as an abstract class)."""
-    __slots__: Tuple[str]
+    __slots__: Iterable[str]
 
-    @overload
-    def run(self, payload: dict, *, stream: Literal[True]) -> StreamingDict:
-        ...
-
-    @overload
-    def run(self, payload: dict, *, stream: Literal[False]) -> dict:
-        ...
-
-    def run(self, payload: dict, *, stream: bool = False) -> RunResult:
+    def __repr__(self) -> str:
         ...
