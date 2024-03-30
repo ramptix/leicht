@@ -10,7 +10,7 @@ from ..types import BasicLLMPayload
 
 try:
     import orjson as json
-except:
+except ImportError:
     import json
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ StreamingDict = Iterable[dict]
 RunResult = Union[StreamingDict, dict]
 
 class GroqPayload(BasicLLMPayload):
-    model: Union[Literal["mistral-8x7b-32768", "gemma-7b-it"], str]
+    model: Literal["mistral-8x7b-32768", "gemma-7b-it"]
 
 class Groq(BaseLLM):
     """Represents the Groq LLM."""

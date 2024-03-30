@@ -1,1 +1,2 @@
 httpx
+typing_extensions
