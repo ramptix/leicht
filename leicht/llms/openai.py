@@ -5,12 +5,6 @@ from typing import Optional
 
 from .base import BaseLLM
 
-try:
-    import dotenv
-    dotenv.load_dotenv()
-except ImportError:
-    dotenv = None # unused from now on
-
 
 class OpenAI(BaseLLM):
     """Represents an OpenAI.
