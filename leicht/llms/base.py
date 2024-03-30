@@ -1,4 +1,3 @@
-from abc import ABC
 from types import ModuleType
 from typing import Any, Iterable, TypeVar, Union, TYPE_CHECKING
 
@@ -12,7 +11,7 @@ if TYPE_CHECKING:
 
 T = TypeVar('T')
 
-class BaseLLM(ABC):
+class BaseLLM:
     """Represents a base LLM (as an abstract class)."""
 
     __slots__: Iterable[str]
