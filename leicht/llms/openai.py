@@ -19,3 +19,6 @@ class OpenAI(BaseLLM):
     def __init__(self, *, api_key: Optional[str] = None):
         # if `api_key` is not provided, use the env
         self.api_key = api_key or os.environ["OPENAI_API_KEY"]
+
+    def __repr__(self) -> str:
+        return "OpenAI(api_key='sk-***')"

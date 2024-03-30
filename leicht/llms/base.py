@@ -12,9 +12,10 @@ if TYPE_CHECKING:
 T = TypeVar('T')
 
 class BaseLLM:
-    """Represents a base LLM (as an abstract class)."""
+    """Represents a base LLM."""
 
     __slots__: Iterable[str]
+    def __init__(self): ...
 
     def __repr__(self) -> str: ...
 
