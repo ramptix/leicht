@@ -25,7 +25,7 @@ def fetch_prompt(name: str) -> bytes:
     )
     r.raise_for_status()
 
-    return r.content
+    return r.content.strip()
 
 def get_cached_prompt_or_fetch(name: str, no_cache: bool = False) -> str:
     if no_cache:
