@@ -27,6 +27,7 @@ Headers = Mapping[str, str]
 class GroqPayload(BasicLLMPayload):
     model: Model
 
+
 class GroqResponseUsage(TypedDict):
     queue_time: float
     prompt_tokens: int
@@ -45,28 +46,22 @@ class XGroq(TypedDict):
 class GroqResponseEnd(BasicLLMResponse):
     x_groq: XGroq
 
+
 Response = Union[BasicLLMResponse, GroqResponseEnd]
 StreamingDict = Iterable[Response]
 RunResult = Union[StreamingDict, Response]
 
 
 class GroqResponse(BaseResponse):
-    def __init__(
-        self, 
-        data: dict, 
-        *, 
-        stream: bool, 
-        pipe: Any,
-        json_mode: bool
-    ):
+    def __init__(self, data: dict, *, stream: bool, pipe: Any, json_mode: bool):
         self._stream = stream
         self._data = data
         self._pipe = pipe
         self._json_mode = json_mode
 
         if json_mode:
-            sc = self._data['choices'][0]['message'] # shortcut
-            sc['json'] = json.loads(sc['content'])
+            sc = self._data["choices"][0]["message"]  # shortcut
+            sc["json"] = json.loads(sc["content"])
 
     def __iter__(self):
         def iterator():
@@ -76,7 +71,7 @@ class GroqResponse(BaseResponse):
             pipe = self._pipe
 
             # We're adding this in case of out of bound errors
-            last_d = {} # type: ignore
+            last_d = {}  # type: ignore
             text = ""
 
             with pipe as r:
@@ -93,25 +88,22 @@ class GroqResponse(BaseResponse):
                     d = json.loads(raw)
                     yield d
 
-                    if d.get('x_groq'):
+                    if d.get("x_groq"):
                         last_d = d
 
-                    text += d['choices'][0].get('content', '')
+                    text += d["choices"][0].get("content", "")
 
             last_d: GroqResponseEnd
             self._stream = False
             self._data = {
                 **last_d,
-                "choices": [{
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": text
-                    }
-                }]
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": text}}
+                ],
             }
+
         return iterator()
-    
+
     def __next__(self):
         return self.__iter__()
 
@@ -119,27 +111,21 @@ class GroqResponse(BaseResponse):
 class Groq(BaseLLM):
     """Represents the Groq LLM."""
 
-    __slots__ = (
-        "_headers",
-        "_api_key",
-        "_payload",
-        "_json_mode",
-        "_tools"
-    )
+    __slots__ = ("_headers", "_api_key", "_payload", "_json_mode", "_tools")
     _headers: Headers
     _api_key: str
-    _payload: dict # extra payload to append
+    _payload: dict  # extra payload to append
     _json_mode: bool
     _tools: List[str]
     _tool_self: Optional[Groq]
 
     def __init__(
-        self, 
-        *, 
-        api_key: Optional[str] = None, 
+        self,
+        *,
+        api_key: Optional[str] = None,
         json_mode: bool = False,
         tools: Optional[List[str]] = None,
-        **extra_payload
+        **extra_payload,
     ):
         # if `api_key` is not provided, use the env
         self._api_key = api_key or os.environ["GROQ_API_KEY"]
@@ -156,11 +142,11 @@ class Groq(BaseLLM):
 
         self._json_mode = json_mode
         if json_mode:
-            self._payload["response_format"] = {
-                "type": "json_object"
-            }
+            self._payload["response_format"] = {"type": "json_object"}
 
-    def run(self, payload: GroqPayload, *, stream: Optional[bool] = None) -> GroqResponse:
+    def run(
+        self, payload: GroqPayload, *, stream: Optional[bool] = None
+    ) -> GroqResponse:
         should_stream = payload["stream"] if stream is None else stream
         client = httpx.Client()
         json_payload = self._payload | payload
@@ -178,55 +164,63 @@ class Groq(BaseLLM):
                 headers=self._headers,
             )
             return GroqResponse({}, stream=True, pipe=pipe, json_mode=self._json_mode)
-            
+
         else:
             r = client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 json=json_payload,
                 headers=self._headers,
-                timeout=None
+                timeout=None,
             )
             try:
                 r.raise_for_status()
             except httpx.HTTPStatusError as err:
                 raise RuntimeError(f"\n\nResponse:\n{r.json()}") from err
-            return GroqResponse(r.json(), stream=False, pipe=None, json_mode=self._json_mode)
-    
-    def get_function_call(self, text: str, payload: GroqPayload) -> Optional[List[Tuple[str, str]]]:
+            return GroqResponse(
+                r.json(), stream=False, pipe=None, json_mode=self._json_mode
+            )
+
+    def get_function_call(
+        self, text: str, payload: GroqPayload
+    ) -> Optional[List[Tuple[str, str]]]:
         # Assert if _tool_self is available
         # This also prevents the following code block from getting a type warning
         assert self._tool_self, "'tools' are not available for this Groq session."
 
-        result = self._tool_self.run({
-            **payload,
-            "messages": [{
-                "role": "user",
-                "content": get_prompt(
-                    "functions-groq",
-                    tools="\n\n".join(self._tools),
-                    most_commonly_used=self._tools[0],
-                    text=text
-                )
-            }]
-        })
+        result = self._tool_self.run(
+            {
+                **payload,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": get_prompt(
+                            "functions-groq",
+                            tools="\n\n".join(self._tools),
+                            most_commonly_used=self._tools[0],
+                            text=text,
+                        ),
+                    }
+                ],
+            }
+        )
 
-        content: str = result['choices'][0]['message'].get('content', '')
-        run_tools = not content.lstrip().lstrip('"\'').lower().startswith("null")
+        content: str = result["choices"][0]["message"].get("content", "")
+        run_tools = not content.lstrip().lstrip("\"'").lower().startswith("null")
 
         return Groq.parse_fn_call(content) if run_tools else None
-    
+
     @staticmethod
     def parse_fn_call(text: str) -> List[Tuple[str, str]]:
         calls = []
 
         for line in text.splitlines():
-            r = re.findall(r'^((?!\d)[a-zA-Z0-9_]+)\((.*)\)(?:.*)$', line)
+            r = re.findall(r"^((?!\d)[a-zA-Z0-9_]+)\((.*)\)(?:.*)$", line)
 
             if not r:
                 continue
 
             calls.append(r[0])
-        
+
         return calls
 
     def __repr__(self):

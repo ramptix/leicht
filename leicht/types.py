@@ -5,6 +5,7 @@ from .llms import BaseLLM
 
 LLMType = Union[Literal["openai", "groq"], BaseLLM]
 
+
 class Message(TypedDict):
     role: Literal["user", "assistant", "system"]
     content: str
@@ -19,6 +20,7 @@ class BasicLLMPayload(TypedDict):
     stop: Optional[str]
     messages: List[Message]
     seed: Optional[int]
+
 
 class BasicLLMResponseDelta(TypedDict):
     content: NotRequired[str]
