@@ -192,7 +192,7 @@ class Groq(BaseLLM):
                 raise RuntimeError(f"\n\nResponse:\n{r.json()}") from err
             return GroqResponse(r.json(), stream=False, pipe=None, json_mode=self._json_mode)
     
-    def should_run_tools(self, text: str, payload: GroqPayload) -> Optional[List[Tuple[str, str]]]:
+    def get_function_call(self, text: str, payload: GroqPayload) -> Optional[List[Tuple[str, str]]]:
         # Assert if _tool_self is available
         # This also prevents the following code block from getting a type warning
         assert self._tool_self, "'tools' are not available for this Groq session."
