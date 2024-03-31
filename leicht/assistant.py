@@ -1,4 +1,4 @@
-from typing import List, Type, Union, overload
+from typing import List, Union, overload
 
 from .llms import BaseLLM, Groq, OpenAI
 from .types import Message, LLMType
@@ -27,7 +27,7 @@ class Assistant:
     llm: BaseLLM
     messages: List[Message]
 
-    def __init__(self, description: str, llm: LLMType):
+    def __init__(self, description: str, *, llm: LLMType):
         self.llm = get_llm(llm)
         self.messages = [{
             "role": "system",
@@ -70,9 +70,11 @@ class Assistant:
                 "content": inquiry
             })
 
+    def function_call(self, inquiry: str):
+        """Run the assistant with function call."""
+
     def __repr__(self) -> str:
         description = self.messages[0]['content']
         return f"Assistant(description={clamp(description)!r}, tools=[])"
-
 
 def pipeline(description: str, llm: LLMType = "openai"): ...

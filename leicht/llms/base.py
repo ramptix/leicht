@@ -15,6 +15,7 @@ class BaseLLM:
     """Represents a base LLM."""
 
     __slots__: Iterable[str]
+
     def __init__(self): ...
 
     def __repr__(self) -> str: ...
