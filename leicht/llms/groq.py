@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import os
+import re
 from types import ModuleType
-from typing import Any, TYPE_CHECKING, Iterable, List, Literal, Optional, Union
+from typing import Any, TYPE_CHECKING, Iterable, List, Literal, Optional, Tuple, Union
 from typing_extensions import Mapping, TypedDict
 
 import httpx
 
 from .base import BaseLLM, BaseResponse
+from ..prompts import get_prompt
 from ..types import BasicLLMPayload, BasicLLMResponse
 
 try:
-    import orjson as json
+    import orjson as json  # type: ignore
 except ImportError:
     import json
 
@@ -24,7 +26,6 @@ Headers = Mapping[str, str]
 
 class GroqPayload(BasicLLMPayload):
     model: Model
-
 
 class GroqResponseUsage(TypedDict):
     queue_time: float
@@ -122,32 +123,22 @@ class Groq(BaseLLM):
         "_headers",
         "_api_key",
         "_payload",
-<<<<<<< HEAD
         "_json_mode",
         "_tools"
-=======
-        "_json_mode"
->>>>>>> 4eea9ff48be66d78487a33079f200db94c429c03
     )
     _headers: Headers
     _api_key: str
     _payload: dict # extra payload to append
     _json_mode: bool
-<<<<<<< HEAD
     _tools: List[str]
     _tool_self: Optional[Groq]
-=======
->>>>>>> 4eea9ff48be66d78487a33079f200db94c429c03
 
     def __init__(
         self, 
         *, 
         api_key: Optional[str] = None, 
         json_mode: bool = False,
-<<<<<<< HEAD
         tools: Optional[List[str]] = None,
-=======
->>>>>>> 4eea9ff48be66d78487a33079f200db94c429c03
         **extra_payload
     ):
         # if `api_key` is not provided, use the env
@@ -158,13 +149,10 @@ class Groq(BaseLLM):
         }
 
         self._payload = extra_payload
-<<<<<<< HEAD
         self._tools = tools or []
 
         if tools:
             self._tool_self = Groq(api_key=self._api_key, json_mode=False)
-=======
->>>>>>> 4eea9ff48be66d78487a33079f200db94c429c03
 
         self._json_mode = json_mode
         if json_mode:
@@ -198,30 +186,48 @@ class Groq(BaseLLM):
                 headers=self._headers,
                 timeout=None
             )
-<<<<<<< HEAD
             try:
                 r.raise_for_status()
             except httpx.HTTPStatusError as err:
                 raise RuntimeError(f"\n\nResponse:\n{r.json()}") from err
             return GroqResponse(r.json(), stream=False, pipe=None, json_mode=self._json_mode)
     
-    def tools_run(self, payload: GroqPayload) -> GroqResponse:
+    def should_run_tools(self, text: str, payload: GroqPayload) -> Optional[List[Tuple[str, str]]]:
         # Assert if _tool_self is available
         # This also prevents the following code block from getting a type warning
         assert self._tool_self, "'tools' are not available for this Groq session."
 
-        self._tool_self.run({
+        result = self._tool_self.run({
             **payload,
             "messages": [{
                 "role": "user",
-                "content": "hi"
+                "content": get_prompt(
+                    "functions-groq",
+                    tools="\n\n".join(self._tools),
+                    most_commonly_used=self._tools[0],
+                    text=text
+                )
             }]
         })
 
-=======
-            r.raise_for_status()
-            return GroqResponse(r.json(), stream=False, pipe=None, json_mode=self._json_mode)
->>>>>>> 4eea9ff48be66d78487a33079f200db94c429c03
+        content: str = result['choices'][0]['message'].get('content', '')
+        run_tools = not content.lstrip().lstrip('"\'').lower().startswith("null")
+
+        return Groq.parse_fn_call(content) if run_tools else None
+    
+    @staticmethod
+    def parse_fn_call(text: str) -> List[Tuple[str, str]]:
+        calls = []
+
+        for line in text.splitlines():
+            r = re.findall(r'^((?!\d)[a-zA-Z0-9_]+)\((.*)\)(?:.*)$', line)
+
+            if not r:
+                continue
+
+            calls.append(r[0])
+        
+        return calls
 
     def __repr__(self):
         return "Groq(api_key='gsk_***')"
