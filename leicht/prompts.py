@@ -80,6 +80,7 @@ def clear_cache():
 def update_all():
     """Update all prompts in ``.preprompt/*``."""
     make_directory()
+    
     for file in os.listdir(".preprompt"):
         if file.endswith(".prompt"):
             # len(".prompt") = 7
