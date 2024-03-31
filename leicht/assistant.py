@@ -1,4 +1,4 @@
-from typing import List, Type, Union, overload
+from typing import List, Union, overload
 
 from .llms import BaseLLM, Groq, OpenAI
 from .types import Message, LLMType
@@ -73,6 +73,5 @@ class Assistant:
     def __repr__(self) -> str:
         description = self.messages[0]['content']
         return f"Assistant(description={clamp(description)!r}, tools=[])"
-
 
 def pipeline(description: str, llm: LLMType = "openai"): ...

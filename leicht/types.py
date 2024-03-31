@@ -18,7 +18,7 @@ class BasicLLMPayload(TypedDict):
     stream: bool
     stop: Optional[str]
     messages: List[Message]
-
+    seed: Optional[int]
 
 class BasicLLMResponseDelta(TypedDict):
     content: NotRequired[str]
