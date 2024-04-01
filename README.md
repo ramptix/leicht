@@ -35,9 +35,9 @@ assistant.pipeline("Who's this?") # Use from assistant, no messages saved to cac
 - [ ] **LLM: OpenAI.** The OpenAI LLM, inherited from `BaseLLM`.
 
 - [ ] **Tools API.** Tools are basically function calls. Including:
-      - JSON API (openai-compatible).
-      - Steps (might consider, basically a mixture of tools)
-      - Custom
+  - JSON API (openai-compatible).
+  - Steps (might consider, basically a mixture of tools)
+  - Custom
 
 - [ ] **Tool: `Playwright`.** The LLM will be able to control a web browser! No worries, we'll use an online version — https://try.playwright.tech
 
