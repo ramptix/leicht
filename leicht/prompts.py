@@ -95,4 +95,10 @@ def update_all():
             # len(".prompt") = 7
             name = file[:-7]
             path_name = os.path.join(".preprompt", file)
-            save_prompt(path_name, fetch_prompt(name))
+
+            try:
+                save_prompt(path_name, fetch_prompt(name))
+            except httpx.HTTPStatusError as err:
+                if err.response.status_code == 404:
+                    print(f"\x1b[1;31m[404] Prompt {name!r} might be deleted.\x1b[0m")
+                    os.remove(".preprompt/" + name + ".prompt")
