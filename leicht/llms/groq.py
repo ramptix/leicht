@@ -249,7 +249,7 @@ class Groq(BaseLLM):
         for k, v in kwargs.items():
             if k == "tools":
                 self._tools = v
-                self._tools_self = (
+                self._tool_self = (
                     Groq(
                         self._payload['model'], 
                         api_key=self._api_key, 
