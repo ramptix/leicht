@@ -1,4 +1,4 @@
-from typing import Any, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 from typing_extensions import NotRequired, TypedDict
 
 from .llms import BaseLLM
@@ -12,7 +12,7 @@ class Message(TypedDict):
 
 
 class BasicLLMPayload(TypedDict):
-    model: Any
+    #model: Any
     temperature: float
     max_tokens: int
     top_p: float

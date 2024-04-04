@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 from types import ModuleType
-from typing import Any, TYPE_CHECKING, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, TYPE_CHECKING, Iterable, List, Literal, NotRequired, Optional, Tuple, Union
 from typing_extensions import Mapping, TypedDict
 
 import httpx
@@ -12,20 +13,15 @@ from .base import BaseLLM, BaseResponse
 from ..prompts import get_prompt
 from ..types import BasicLLMPayload, BasicLLMResponse
 
-try:
-    import orjson as json  # type: ignore
-except ImportError:
-    import json
-
 if TYPE_CHECKING:
     json: ModuleType
 
-Model = Literal["mixtral-8x7b-32768", "gemma-7b-it"]
+Model = Literal["mixtral-8x7b-32768", "gemma-7b-it", "llama2-70b-4096"]
 Headers = Mapping[str, str]
 
 
 class GroqPayload(BasicLLMPayload):
-    model: Model
+    model: NotRequired[Model]
 
 
 class GroqResponseUsage(TypedDict):
@@ -106,6 +102,9 @@ class GroqResponse(BaseResponse):
 
     def __next__(self):
         return self.__iter__()
+    
+    def __repr__(self) -> str:
+        return "GroqResponse(" + json.dumps(self._data) + ")"
 
 
 class Groq(BaseLLM):
@@ -121,6 +120,7 @@ class Groq(BaseLLM):
 
     def __init__(
         self,
+        model: Model = "mixtral-8x7b-32768",
         *,
         api_key: Optional[str] = None,
         json_mode: bool = False,
@@ -134,11 +134,11 @@ class Groq(BaseLLM):
             "Content-Type": "application/json",
         }
 
-        self._payload = extra_payload
+        self._payload = { "model": model, **extra_payload }
+
         self._tools = tools or []
 
-        if tools:
-            self._tool_self = Groq(api_key=self._api_key, json_mode=False)
+        self._tool_self = Groq(model, api_key=self._api_key, json_mode=False) if tools else None
 
         self._json_mode = json_mode
         if json_mode:
@@ -222,6 +222,27 @@ class Groq(BaseLLM):
             calls.append(r[0])
 
         return calls
+    
+    def __call__(self, payload: GroqPayload, *, stream: bool = False): # type: ignore
+        """Runs a call.
+        
+        Args:
+            payload (GroqPayload): The payload.
+            stream (bool): Stream?
+        """
+        messages = payload['messages']
+        
+        if self._tool_self:
+            print('tools are available')
+            # tools are available
+            fn = self.get_function_call(
+                messages[-1]['content'], 
+                payload # 'messages' will be shadow'd, so no worries
+            )
+            if fn:
+                return {"functions": fn}
+            
+        return self.run(payload, stream=stream)
 
     def __repr__(self):
         return "Groq(api_key='gsk_***')"

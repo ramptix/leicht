@@ -1,16 +1,6 @@
-from types import ModuleType
-from typing import Any, Iterable, TypeVar, Union, TYPE_CHECKING
-
-try:
-    import orjson as json
-except ImportError:
-    import json
-
-if TYPE_CHECKING:
-    json: ModuleType
+from typing import Any, Iterable, TypeVar, Union
 
 T = TypeVar("T")
-
 
 class BaseLLM:
     """Represents a base LLM."""
@@ -20,6 +10,8 @@ class BaseLLM:
     def __init__(self): ...
 
     def __repr__(self) -> str: ...
+
+    def __call__(self, *args, **kwrags) -> Any: ...
 
 
 class BaseResponse:
@@ -49,12 +41,4 @@ class BaseResponse:
         return self._data[k]
 
     def __repr__(self) -> str:
-        # using json.__name__ can suppress AttributeError's
-        if json.__name__ == "json":
-            return "GroqResponse(" + json.dumps(self._data) + ")"
-        else:
-            return (
-                "GroqResponse("
-                + json.dumps(self._data, option=json.OPT_INDENT_2).decode("utf-8")
-                + ")"
-            )
+        ...
