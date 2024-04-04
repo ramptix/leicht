@@ -43,6 +43,10 @@ class GroqResponseEnd(BasicLLMResponse):
     x_groq: XGroq
 
 
+class FunctionCallResponse(TypedDict):
+    functions: List[Tuple[str, str]]
+
+
 Response = Union[BasicLLMResponse, GroqResponseEnd]
 StreamingDict = Iterable[Response]
 RunResult = Union[StreamingDict, Response]
