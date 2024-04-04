@@ -1,5 +1,7 @@
 from typing import Any, Iterable, TypeVar, Union
 
+from git import Optional
+
 T = TypeVar("T")
 
 class BaseLLM:
@@ -25,7 +27,7 @@ class BaseResponse:
     def copy(self) -> dict:
         return self._data.copy()
 
-    def get(self, k: str, default: T, /) -> Union[Any, T]:
+    def get(self, k: str, default: Optional[T] = None, /) -> Union[Any, T]:
         return self._data.get(k, default)
 
     def items(self) -> Iterable:
