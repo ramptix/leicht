@@ -3,3 +3,4 @@
 test.py
 Pipfile
 .ruff_cache/
+activate.ps1
