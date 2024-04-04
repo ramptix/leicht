@@ -110,7 +110,7 @@ class Assistant:
             # Message(role="user", content=inquiry)
             self.messages.append({"role": "user", "content": inquiry})
 
-        return self.llm({
+        res = self.llm({
             "max_tokens": max_tokens,
             "seed": seed,
             "stop": stop,
@@ -119,6 +119,8 @@ class Assistant:
             "top_p": top_p,
             "messages": self.messages
         })
+        
+        return res
 
     def __repr__(self) -> str:
         description = self.messages[0]["content"]

@@ -237,7 +237,6 @@ class Groq(BaseLLM):
         messages = payload['messages']
         
         if self._tool_self:
-            print('tools are available')
             # tools are available
             fn = self.get_function_call(
                 messages[-1]['content'], 
