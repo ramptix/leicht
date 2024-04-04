@@ -193,6 +193,7 @@ class Groq(BaseLLM):
             {
                 **payload,
                 "messages": [
+                    *payload['messages'],
                     {
                         "role": "user",
                         "content": get_prompt(
@@ -238,7 +239,7 @@ class Groq(BaseLLM):
             # tools are available
             fn = self.get_function_call(
                 messages[-1]['content'], 
-                payload # 'messages' will be shadow'd, so no worries
+                payload
             )
             if fn:
                 return {"functions": fn}
