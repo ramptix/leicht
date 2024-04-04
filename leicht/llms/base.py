@@ -1,4 +1,5 @@
 from typing import Any, Iterable, TypeVar, Union
+from typing_extensions import Self
 
 from git import Optional
 
@@ -14,6 +15,8 @@ class BaseLLM:
     def __repr__(self) -> str: ...
 
     def __call__(self, *args, **kwrags) -> Any: ...
+
+    def set(self, **kwargs) -> Self: ...
 
 
 class BaseResponse:

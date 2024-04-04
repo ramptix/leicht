@@ -11,7 +11,10 @@ AnyLLM = Union[BaseLLM, Groq, OpenAI]
 llm_mapping = { "openai": OpenAI, "groq": Groq }
 
 def get_llm(llm: LLMType, **kwargs) -> AnyLLM:
-    return llm_mapping[llm](**kwargs) if isinstance(llm, str) else llm
+    if isinstance(llm, str):
+        return llm_mapping[llm](**kwargs)
+    else:
+        return llm.set(**kwargs)
 
 
 class Assistant:
@@ -124,7 +127,7 @@ class Assistant:
 
     def __repr__(self) -> str:
         description = self.messages[0]["content"]
-        return f"Assistant(description={clamp(description)!r}, tools=[])"
+        return f"Assistant(description={clamp(description)!r}, len(tools)={len(self.tools)})"
 
 
 def pipeline(description: str, llm: LLMType = "openai"): ...

@@ -140,9 +140,7 @@ class Groq(BaseLLM):
 
         self._payload = { "model": model, **extra_payload }
 
-        self._tools = tools or []
-
-        self._tool_self = Groq(model, api_key=self._api_key, json_mode=False) if tools else None
+        self.set(tools=tools or [])
 
         self._json_mode = json_mode
         if json_mode:
@@ -246,6 +244,21 @@ class Groq(BaseLLM):
                 return {"functions": fn}
             
         return self.run(payload, stream=stream)
+    
+    def set(self, **kwargs):
+        for k, v in kwargs.items():
+            if k == "tools":
+                self._tools = v
+                self._tools_self = (
+                    Groq(
+                        self._payload['model'], 
+                        api_key=self._api_key, 
+                        json_mode=False
+                    )
+                    if v else None
+                )
+
+        return self
 
     def __repr__(self):
         return "Groq(api_key='gsk_***')"
