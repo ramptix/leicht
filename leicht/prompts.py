@@ -103,19 +103,22 @@ def clear_cache():
     shutil.rmtree(".preprompt", ignore_errors=True)
 
 
-def update_all():
-    """Update all prompts in ``.preprompt/*``."""
+def update_all(_dir: str = ".preprompt"):
+    """Update all prompts."""
     make_directory()
+    path = lambda p: p.replace("\\", "/") # noqa: E731
 
-    for file in os.listdir(".preprompt"):
+    for file in os.listdir(_dir):
         if file.endswith(".prompt"):
-            # len(".prompt") = 7
-            name = file[:-7]
-            path_name = os.path.join(".preprompt", file)
+            path_name = path(os.path.join(_dir, file))
+            name = path_name[11:-7] # len(".preprompt/") = 11, len(".prompt") = 7
 
             try:
                 save_prompt(path_name, fetch_prompt(name))
             except httpx.HTTPStatusError as err:
                 if err.response.status_code == 404:
-                    print(f"\x1b[1;31m[404] Prompt {name!r} might be deleted.\x1b[0m")
-                    os.remove(".preprompt/" + name + ".prompt")
+                    print(f"\x1b[1;31m[404] Prompt {name!r} is not available, skipping.\x1b[0m")
+                    os.remove(path_name)
+
+        elif os.path.isdir(os.path.join(_dir, file)):
+            update_all(".preprompt/%s" % file)
