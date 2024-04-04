@@ -22,6 +22,20 @@ def make_directory() -> None:
 
 def fetch_prompt(name: str) -> bytes:
     client = httpx.Client()
+
+    if name.startswith('community'):
+        r = client.get(
+            "https://github-discussions-api.vercel.app/body",
+            params={
+                "url": (
+                    "https://github.com/ramptix/preprompted-data/discussions/%s" % name.split('/')[1]
+                )
+            },
+            timeout=None
+        )
+        r.raise_for_status()
+        return r.json()['body'].encode('utf8')
+
     r = client.get(
         f"https://raw.githubusercontent.com/ramptix/preprompted-data/main/src/{name}.md"
     )
