@@ -31,6 +31,9 @@ def fetch_prompt(name: str) -> bytes:
 
 
 def save_prompt(path_name: str, data: bytes):
+    if "/" in path_name:
+        os.makedirs("/".join(path_name.split('/')[:-1]), exist_ok=True)
+    
     with gzip.open(path_name, "wb") as file:
         file.write(data)
 
