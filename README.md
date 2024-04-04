@@ -11,8 +11,8 @@ groq = Groq()
 
 # Create an assistant
 assistant = Assistant(
-  "You're a helpful assistant.",
-  llm=groq
+  "basic", # see preprompted-data
+  llm="groq"
 )
 
 # Run the assistant
@@ -21,9 +21,15 @@ assistant.run("knock knock")
 
 Messages are stored for continuous chat.
 
+**You raise me up!! ▢ >>>>>>> △**
+
+<br />
+
 ## Our Tasks
 
 There are so many features I thought of but I'm literally on my phone (on the 🚽, forgive me, I'm at work) typing right now, so maybe I'll just leave it until I have time.
+
+- [x] **Function calling.** Implements: function calling.
 
 - [ ] **Pipeline.** Basically an `Assistant` but designed to be used one-time.
 
