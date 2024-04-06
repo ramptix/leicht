@@ -245,9 +245,9 @@ class Groq(BaseLLM):
 
         return calls
 
-    def __call__(
+    def __call__( # type: ignore
         self, payload: GroqPayload, *, stream: bool = False
-    ) -> Union[GroqResponse, FunctionCallResponse]:  # type: ignore
+    ) -> Union[GroqResponse, FunctionCallResponse]:
         """Runs a call.
 
         Args:

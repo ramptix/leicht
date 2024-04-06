@@ -1,3 +1,3 @@
 [submodule "hf-g4f"]
 	path = hf-g4f
-	url = ./hf-g4f
+	url = huggingface.co/spaces/AWeirdDev/g4f

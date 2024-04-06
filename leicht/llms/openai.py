@@ -43,6 +43,13 @@ class OpenAILike(BaseLLM):
         self.api_key = api_key or os.environ[api_key_path] if api_key_path else ""
         self.openai = _OpenAI(base_url=base_url, api_key=self.api_key, **kwargs)
 
+    def chat_completions(self):
+        response = self.openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "write a poem about a tree"}]
+        )
+        return response
+
     def __repr__(self) -> str:
         return "OpenAI(api_key='sk-***')"
 
@@ -50,5 +57,6 @@ class OpenAILike(BaseLLM):
 class OpenAI(OpenAILike):
     def __init__(self):
         super().__init__(
-            base_url="https://api.openai.com/v1/", api_key_path="OPENAI_API_KEY"
+            base_url="https://api.openai.com/v1/",
+            api_key_path="OPENAI_API_KEY"
         )
