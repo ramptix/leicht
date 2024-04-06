@@ -121,6 +121,7 @@ class Groq(BaseLLM):
     _json_mode: bool
     _tools: List[str]
     _tool_self: Optional[Groq]
+    _api_base = "https://api.groq.com/openai/v1"
 
     def __init__(
         self,
@@ -161,7 +162,7 @@ class Groq(BaseLLM):
         if should_stream:
             pipe = client.stream(
                 "POST",
-                "https://api.groq.com/openai/v1/chat/completions",
+                self._api_base + "/chat/completions",
                 json=json_payload,
                 headers=self._headers,
             )
@@ -169,7 +170,7 @@ class Groq(BaseLLM):
 
         else:
             r = client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
+                self._api_base + "/chat/completions",
                 json=json_payload,
                 headers=self._headers,
                 timeout=None,
@@ -193,15 +194,20 @@ class Groq(BaseLLM):
             {
                 **payload,
                 "messages": [
-                    *payload['messages'],
                     {
                         "role": "user",
-                        "content": get_prompt(
-                            "functions-groq",
-                            tools="\n\n".join(self._tools),
-                            most_commonly_used=self._tools[0],
-                            text=text,
-                        ),
+                        "content": (
+                            "Messages:\n" + 
+                            "\n".join([
+                                f"{m['role']}: {m['content']}" for m in payload['messages']
+                            ]) + 
+                            get_prompt(
+                                "functions-groq",
+                                tools="\n\n".join(self._tools),
+                                most_commonly_used=self._tools[0],
+                                text=text,
+                            )
+                        )
                     }
                 ],
             }
