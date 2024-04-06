@@ -23,18 +23,19 @@ def make_directory() -> None:
 def fetch_prompt(name: str) -> bytes:
     client = httpx.Client()
 
-    if name.startswith('community'):
+    if name.startswith("community"):
         r = client.get(
             "https://github-discussions-api.vercel.app/body",
             params={
                 "url": (
-                    "https://github.com/ramptix/preprompted-data/discussions/%s" % name.split('/')[1]
+                    "https://github.com/ramptix/preprompted-data/discussions/%s"
+                    % name.split("/")[1]
                 )
             },
-            timeout=None
+            timeout=None,
         )
         r.raise_for_status()
-        return r.json()['body'].encode('utf8')
+        return r.json()["body"].encode("utf8")
 
     r = client.get(
         f"https://raw.githubusercontent.com/ramptix/preprompted-data/main/src/{name}.md"
@@ -46,8 +47,8 @@ def fetch_prompt(name: str) -> bytes:
 
 def save_prompt(path_name: str, data: bytes):
     if "/" in path_name:
-        os.makedirs("/".join(path_name.split('/')[:-1]), exist_ok=True)
-    
+        os.makedirs("/".join(path_name.split("/")[:-1]), exist_ok=True)
+
     with gzip.open(path_name, "wb") as file:
         file.write(data)
 
@@ -106,18 +107,20 @@ def clear_cache():
 def update_all(_dir: str = ".preprompt"):
     """Update all prompts."""
     make_directory()
-    path = lambda p: p.replace("\\", "/") # noqa: E731
+    path = lambda p: p.replace("\\", "/")  # noqa: E731
 
     for file in os.listdir(_dir):
         if file.endswith(".prompt"):
             path_name = path(os.path.join(_dir, file))
-            name = path_name[11:-7] # len(".preprompt/") = 11, len(".prompt") = 7
+            name = path_name[11:-7]  # len(".preprompt/") = 11, len(".prompt") = 7
 
             try:
                 save_prompt(path_name, fetch_prompt(name))
             except httpx.HTTPStatusError as err:
                 if err.response.status_code == 404:
-                    print(f"\x1b[1;31m[404] Prompt {name!r} is not available, skipping.\x1b[0m")
+                    print(
+                        f"\x1b[1;31m[404] Prompt {name!r} is not available, skipping.\x1b[0m"
+                    )
                     os.remove(path_name)
 
         elif os.path.isdir(os.path.join(_dir, file)):

@@ -12,7 +12,7 @@ class Message(TypedDict):
 
 
 class BasicLLMPayload(TypedDict):
-    #model: Any
+    # model: Any
     temperature: float
     max_tokens: int
     top_p: float

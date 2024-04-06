@@ -4,14 +4,15 @@ from typing import Callable, Generic, List, Literal, ParamSpec, TypeVar, Union
 from typing_extensions import TypedDict
 
 # regex patterns
-REGEX_name = r"^((?!\d)[a-zA-Z0-9_]+)(.*)$" # /g
-REGEX_ds_content = r"(?:\n\s*)?(?!\s)(.+)" # /gm
-REGEX_param_desc = r"^(?!\d)[a-zA-Z0-9_]+\s*(?:\(.+\))?:\s*(.+)$" # /g
+REGEX_name = r"^((?!\d)[a-zA-Z0-9_]+)(.*)$"  # /g
+REGEX_ds_content = r"(?:\n\s*)?(?!\s)(.+)"  # /gm
+REGEX_param_desc = r"^(?!\d)[a-zA-Z0-9_]+\s*(?:\(.+\))?:\s*(.+)$"  # /g
 
 # types
 Handler = Callable[..., Union[list, dict, TypedDict]]
-P = ParamSpec('P')
-T = TypeVar('T', list, dict, TypedDict)
+P = ParamSpec("P")
+T = TypeVar("T", list, dict, TypedDict)
+
 
 class DocstringResult(TypedDict):
     description: str
@@ -22,7 +23,7 @@ class BaseTool(Generic[P, T]):
     """Represents a base tool.
 
     Args:
-        name (str): Name of the tool. Must match the function calling format in 
+        name (str): Name of the tool. Must match the function calling format in
             Regex (``/^((?!\\d)[a-zA-Z0-9_]+)(.*)$/g``).
         description (str): Tool description.
     """
@@ -34,26 +35,23 @@ class BaseTool(Generic[P, T]):
     docstring: DocstringResult
     handler: Callable[P, T]
 
-    def __init__(
-        self,
-        name: str,
-        handler: Callable[P, T]
-    ):
+    def __init__(self, name: str, handler: Callable[P, T]):
         if not re.match(REGEX_name, name):
-            raise ValueError(f"Invalid function name {name!r}. (Not matching r{REGEX_name!r})")
+            raise ValueError(
+                f"Invalid function name {name!r}. (Not matching r{REGEX_name!r})"
+            )
 
         self.name = name
         self.handler = handler
         self.params = BaseTool.get_args(self.handler)
         self.docstring = BaseTool.parse_docstrings(self.handler.__doc__ or "")
-        self.description = self.docstring['description']
-    
+        self.description = self.docstring["description"]
+
     @property
     def prompt(self) -> str:
         return BaseTool.mix_make_prompt(self.name, self.params, self.docstring)
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
-        ...
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T: ...
 
     # Static Methods
     @staticmethod
@@ -78,45 +76,43 @@ class BaseTool(Generic[P, T]):
 
         desc = ""
         args = []
-        
+
         for line in lines:
             if line.rstrip().lower() == "args:":
                 state = "args"
                 continue
-            
+
             if state == "null":
                 desc += line
             elif state == "args":
                 args.append(re.findall(REGEX_param_desc, line)[0])
 
-        return { "description": desc, "args": args }
-    
+        return {"description": desc, "args": args}
+
     @staticmethod
     def mix_make_prompt(
-        name: str,
-        params: List[inspect.Parameter], 
-        docstring: DocstringResult
+        name: str, params: List[inspect.Parameter], docstring: DocstringResult
     ) -> str:
         """Mix ``params`` and ``docstring`` to make a prompt."""
-        assert docstring['description'], "Description unprovided."
-        assert len(params) == len(docstring['args']), "Descriptions do not match for args."
+        assert docstring["description"], "Description unprovided."
+        assert len(params) == len(
+            docstring["args"]
+        ), "Descriptions do not match for args."
 
         args = []
         for p in params:
             args.append(
-                f"{p.name}: {p.annotation.__name__}" +
-                ((f'={p.default!r}') if p.default != inspect._empty else '')
+                f"{p.name}: {p.annotation.__name__}"
+                + ((f"={p.default!r}") if p.default != inspect._empty else "")
             )
 
-        prompt = (
-            f"{name}({', '.join(args)})\n" +
-            docstring['description'] + "\n"
-        )
+        prompt = f"{name}({', '.join(args)})\n" + docstring["description"] + "\n"
         for i in range(len(params)):
             param = params[i]
             prompt += f"{param.name} - {docstring['args'][i]}\n"
 
         return prompt
+
 
 def tool(fn: Callable[P, T]) -> BaseTool[P, T]:
     """A decorator that makes wraps a function into a tool.
@@ -126,13 +122,13 @@ def tool(fn: Callable[P, T]) -> BaseTool[P, T]:
         @tool
         def weather(location: str):
             \"\"\"Gets the location.
-            
+
             Args:
                 location (str): The location.
             \"\"\"
             return { "weather": "nice" }
         ```
-    
+
     Args:
         fn (Handler): Function.
     """
@@ -140,5 +136,5 @@ def tool(fn: Callable[P, T]) -> BaseTool[P, T]:
     class _ToolFactory(BaseTool):
         def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
             return fn(*args, **kwargs)
-        
+
     return _ToolFactory(fn.__name__, handler=fn)

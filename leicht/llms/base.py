@@ -5,6 +5,7 @@ from git import Optional
 
 T = TypeVar("T")
 
+
 class BaseLLM:
     """Represents a base LLM."""
 
@@ -45,5 +46,4 @@ class BaseResponse:
     def __getitem__(self, k: str) -> Any:
         return self._data[k]
 
-    def __repr__(self) -> str:
-        ...
+    def __repr__(self) -> str: ...

@@ -4,7 +4,17 @@ import json
 import os
 import re
 from types import ModuleType
-from typing import Any, TYPE_CHECKING, Iterable, List, Literal, NotRequired, Optional, Tuple, Union
+from typing import (
+    Any,
+    TYPE_CHECKING,
+    Iterable,
+    List,
+    Literal,
+    NotRequired,
+    Optional,
+    Tuple,
+    Union,
+)
 from typing_extensions import Mapping, TypedDict
 
 import httpx
@@ -106,7 +116,7 @@ class GroqResponse(BaseResponse):
 
     def __next__(self):
         return self.__iter__()
-    
+
     def __repr__(self) -> str:
         return "GroqResponse(" + json.dumps(self._data) + ")"
 
@@ -139,7 +149,7 @@ class Groq(BaseLLM):
             "Content-Type": "application/json",
         }
 
-        self._payload = { "model": model, **extra_payload }
+        self._payload = {"model": model, **extra_payload}
 
         self.set(tools=tools or [])
 
@@ -197,17 +207,20 @@ class Groq(BaseLLM):
                     {
                         "role": "user",
                         "content": (
-                            "Messages:\n" + 
-                            "\n".join([
-                                f"{m['role']}: {m['content']}" for m in payload['messages']
-                            ]) + 
-                            get_prompt(
+                            "Messages:\n"
+                            + "\n".join(
+                                [
+                                    f"{m['role']}: {m['content']}"
+                                    for m in payload["messages"]
+                                ]
+                            )
+                            + get_prompt(
                                 "functions-groq",
                                 tools="\n\n".join(self._tools),
                                 most_commonly_used=self._tools[0],
                                 text=text,
                             )
-                        )
+                        ),
                     }
                 ],
             }
@@ -231,38 +244,34 @@ class Groq(BaseLLM):
             calls.append(r[0])
 
         return calls
-    
-    def __call__(self, payload: GroqPayload, *, stream: bool = False) -> Union[GroqResponse, FunctionCallResponse]: # type: ignore
+
+    def __call__(
+        self, payload: GroqPayload, *, stream: bool = False
+    ) -> Union[GroqResponse, FunctionCallResponse]:  # type: ignore
         """Runs a call.
-        
+
         Args:
             payload (GroqPayload): The payload.
             stream (bool): Stream?
         """
-        messages = payload['messages']
-        
+        messages = payload["messages"]
+
         if self._tool_self:
             # tools are available
-            fn = self.get_function_call(
-                messages[-1]['content'], 
-                payload
-            )
+            fn = self.get_function_call(messages[-1]["content"], payload)
             if fn:
                 return {"functions": fn}
-            
+
         return self.run(payload, stream=stream)
-    
+
     def set(self, **kwargs):
         for k, v in kwargs.items():
             if k == "tools":
                 self._tools = v
                 self._tool_self = (
-                    Groq(
-                        self._payload['model'], 
-                        api_key=self._api_key, 
-                        json_mode=False
-                    )
-                    if v else None
+                    Groq(self._payload["model"], api_key=self._api_key, json_mode=False)
+                    if v
+                    else None
                 )
 
         return self
