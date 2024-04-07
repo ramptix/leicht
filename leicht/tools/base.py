@@ -36,6 +36,7 @@ T = TypeVar("T", list, dict, TypedDict)
 class DocstringResult(TypedDict):
     description: str
     args: List[str]
+    capabilities: str
 
 
 class BaseTool(Generic[P, T]):
@@ -47,12 +48,13 @@ class BaseTool(Generic[P, T]):
         description (str): Tool description.
     """
 
-    __slots__ = ("name", "handler", "description", "params", "docstring")
+    __slots__ = ("name", "handler", "description", "params", "docstring", "caps")
     name: str
     description: str
     params: List[inspect.Parameter]
     docstring: DocstringResult
     handler: Callable[P, T]
+    caps: str
 
     def __init__(self, name: str, handler: Callable[P, T]):
         if not re.match(REGEX_name, name):
@@ -65,6 +67,7 @@ class BaseTool(Generic[P, T]):
         self.params = BaseTool.get_args(self.handler)
         self.docstring = BaseTool.parse_docstrings(self.handler.__doc__ or "")
         self.description = self.docstring["description"]
+        self.caps = self.docstring['capabilities']
 
     @property
     def prompt(self) -> str:
@@ -97,10 +100,11 @@ class BaseTool(Generic[P, T]):
     @staticmethod
     def parse_docstrings(docstring: str) -> DocstringResult:
         lines: List[str] = re.findall(REGEX_ds_content, docstring)
-        state: Literal["null", "args"] = "null"
+        state: Literal["null", "args", "capabilities"] = "null"
 
         desc = ""
         args = []
+        caps = ""
 
         for line in lines:
             if line.rstrip().lower() == "args:":
@@ -108,11 +112,17 @@ class BaseTool(Generic[P, T]):
                 continue
 
             if state == "null":
-                desc += line
+                desc += (line + "\n")
             elif state == "args":
                 args.append(re.findall(REGEX_param_desc, line)[0])
+            elif state == "capabilities":
+                caps += (line + "\n")
 
-        return {"description": desc, "args": args}
+        return {
+            "description": desc, 
+            "args": args,
+            "capabilities": caps
+        }
 
     @staticmethod
     def mix_make_prompt(

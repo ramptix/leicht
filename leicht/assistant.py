@@ -44,9 +44,20 @@ class Assistant:
             except:  # noqa: E722
                 ...  # Use the description
 
-        self.tools = {tool.name: tool for tool in (tools or [])}
-        self.llm = get_llm(llm, tools=[tool.prompt for tool in (tools or [])])
-        self.messages = [{"role": "system", "content": description}]
+        tools = tools or []
+        self.tools = {tool.name: tool for tool in tools}
+        self.llm = get_llm(llm, tools=[tool.prompt for tool in tools])
+        self.messages = [
+            {
+                "role": "system", 
+                "content": description + (
+                    "You can:\n" + "\n".join((
+                        (tool.caps or tool.description) for tool in tools
+                    ))
+                    if tools else ""
+                )
+            }
+        ]
 
     @overload
     def run(
@@ -131,7 +142,7 @@ class Assistant:
                     res = self.tools[func[0]].__call__(*args, **kwargs)
                     self.messages.append(
                         {
-                            "role": "assistant",
+                            "role": "system",
                             "content": f"I executed {func[0]}({func[1]}), results:\n{res}",
                         }
                     )

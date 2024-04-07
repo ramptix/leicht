@@ -301,14 +301,14 @@ class Groq(BaseLLM):
     @contextmanager
     def notools(self, _m: bool = True):
         if _m:
-            print("NOTOOLS")
+            #print("NOTOOLS")
             assert self._tool_self, "Tools are not available"
 
             tools, tool_self = self._tools, self._tool_self
             self.set(tools=[])
             yield
             self.set(fill_tools=tools, fill_tool_self=tool_self)
-            print("TOOLS")
+            #print("TOOLS")
         else:
             yield
 
