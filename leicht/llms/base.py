@@ -1,8 +1,6 @@
 from typing import Any, Iterable, TypeVar, Union, Optional
 from typing_extensions import Self
 
-from ..types import BasicLLMPayload
-
 T = TypeVar("T")
 
 
@@ -15,7 +13,7 @@ class BaseLLM:
 
     def __repr__(self) -> str: ...
 
-    def __call__(self, payload: BasicLLMPayload) -> Any: ...
+    def __call__(self, payload: ...) -> Any: ...
 
     def set(self, **kwargs) -> Self: ...
 
