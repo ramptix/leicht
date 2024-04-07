@@ -49,13 +49,14 @@ class Assistant:
         self.llm = get_llm(llm, tools=[tool.prompt for tool in tools])
         self.messages = [
             {
-                "role": "system", 
-                "content": description + (
-                    "You can:\n" + "\n".join((
-                        (tool.caps or tool.description) for tool in tools
-                    ))
-                    if tools else ""
-                )
+                "role": "system",
+                "content": description
+                + (
+                    "You can:\n"
+                    + "\n".join(((tool.caps or tool.description) for tool in tools))
+                    if tools
+                    else ""
+                ),
             }
         ]
 

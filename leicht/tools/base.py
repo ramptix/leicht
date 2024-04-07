@@ -67,7 +67,7 @@ class BaseTool(Generic[P, T]):
         self.params = BaseTool.get_args(self.handler)
         self.docstring = BaseTool.parse_docstrings(self.handler.__doc__ or "")
         self.description = self.docstring["description"]
-        self.caps = self.docstring['capabilities']
+        self.caps = self.docstring["capabilities"]
 
     @property
     def prompt(self) -> str:
@@ -112,17 +112,13 @@ class BaseTool(Generic[P, T]):
                 continue
 
             if state == "null":
-                desc += (line + "\n")
+                desc += line + "\n"
             elif state == "args":
                 args.append(re.findall(REGEX_param_desc, line)[0])
             elif state == "capabilities":
-                caps += (line + "\n")
+                caps += line + "\n"
 
-        return {
-            "description": desc, 
-            "args": args,
-            "capabilities": caps
-        }
+        return {"description": desc, "args": args, "capabilities": caps}
 
     @staticmethod
     def mix_make_prompt(

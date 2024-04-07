@@ -252,10 +252,7 @@ class Groq(BaseLLM):
             if not r:
                 continue
 
-            calls.append((
-                r[0][0].replace('\\_', '_'), 
-                r[0][1]
-            ))
+            calls.append((r[0][0].replace("\\_", "_"), r[0][1]))
 
         return calls
 
@@ -284,11 +281,12 @@ class Groq(BaseLLM):
                 self._tools = v
                 self._tool_self = (
                     Groq(
-                        self._payload["model"], 
-                        api_key=self._api_key, 
+                        self._payload["model"],
+                        api_key=self._api_key,
                         json_mode=False,
-                        tool_self=True
-                    ) if v
+                        tool_self=True,
+                    )
+                    if v
                     else None
                 )
             elif k == "fill_tools":
@@ -301,14 +299,14 @@ class Groq(BaseLLM):
     @contextmanager
     def notools(self, _m: bool = True):
         if _m:
-            #print("NOTOOLS")
+            # print("NOTOOLS")
             assert self._tool_self, "Tools are not available"
 
             tools, tool_self = self._tools, self._tool_self
             self.set(tools=[])
             yield
             self.set(fill_tools=tools, fill_tool_self=tool_self)
-            #print("TOOLS")
+            # print("TOOLS")
         else:
             yield
 
