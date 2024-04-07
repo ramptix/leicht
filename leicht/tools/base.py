@@ -1,18 +1,29 @@
 import ast
 import inspect
 import re
-from typing import Callable, Generic, List, Literal, Mapping, ParamSpec, Tuple, TypeVar, Union
+from types import EllipsisType
+from typing import (
+    Callable,
+    Generic,
+    List,
+    Literal,
+    Mapping,
+    ParamSpec,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from typing_extensions import TypedDict
 
 # regex patterns
 REGEX_name = r"^((?!\d)[a-zA-Z0-9_]+)(.*)$"  # /g
 REGEX_ds_content = r"(?:\n\s*)?(?!\s)(.+)"  # /gm
 REGEX_param_desc = r"^(?!\d)[a-zA-Z0-9_]+\s*(?:\(.+\))?:\s*(.+)$"  # /g
-REGEX_parse_args = r"^(?:((?!\d)[a-zA-Z0-9_]+)=)?(.*)$" # /g
+REGEX_parse_args = r"^(?:((?!\d)[a-zA-Z0-9_]+)=)?(.*)$"  # /g
 
 # constants
 builtin_types = [bool, bytes, dict, int, float, str]
-invalid_types = [list, set, dict, tuple]
+invalid_types = [list, set, dict, tuple, EllipsisType]
 
 # types
 BuiltinTypes = Union[bool, bytes, dict, float, str]
@@ -72,7 +83,7 @@ class BaseTool(Generic[P, T]):
                 raise TypeError(
                     f"Unsupported parameter kind for param {str(param)!r}: {param.kind}"
                 )
-            
+
             if param.annotation in invalid_types:
                 raise TypeError(
                     f"{param.annotation!r} is an invalid type because it's one of {invalid_types!r}.\n"
@@ -126,25 +137,25 @@ class BaseTool(Generic[P, T]):
             prompt += f"{param.name} - {docstring['args'][i]}\n"
 
         return prompt
-    
+
     @staticmethod
     def parse_args_from_text(
-        text: str
+        text: str,
     ) -> Tuple[List[BuiltinTypes], Mapping[str, BuiltinTypes]]:
         args = []
         kwargs = {}
 
         module = ast.parse(f"_({text})")
-        call: ast.Call = module.body[0].value # type: ignore
-        
+        call: ast.Call = module.body[0].value  # type: ignore
+
         for arg in call.args:
             if not isinstance(arg, ast.Constant):
-                raise ValueError(
-                    "Call arguments can only be constants (ast.Constant)"
-                )
-            
+                raise ValueError("Call arguments can only be constants (ast.Constant)")
+
             if type(arg.value) in invalid_types:
-                raise TypeError("Invalid argument type. (caused by LLM)")
+                raise TypeError(
+                    f"Invalid argument type. (got {type(arg.value)!r}, caused by LLM)"
+                )
 
             args.append(arg.value)
 
@@ -155,8 +166,10 @@ class BaseTool(Generic[P, T]):
                 )
 
             if type(kwarg.value.value) in invalid_types:
-                raise TypeError("Invalid keyword-argument type. (caused by LLM)")
-            
+                raise TypeError(
+                    f"Invalid keyword-argument type. (got {type(kwarg.value.value)!r}, caused by LLM)"
+                )
+
             kwargs[kwarg.arg] = kwarg.value.value
 
         return args, kwargs

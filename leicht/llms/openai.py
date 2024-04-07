@@ -57,6 +57,5 @@ class OpenAILike(BaseLLM):
 class OpenAI(OpenAILike):
     def __init__(self):
         super().__init__(
-            base_url="https://api.openai.com/v1/",
-            api_key_path="OPENAI_API_KEY"
+            base_url="https://api.openai.com/v1/", api_key_path="OPENAI_API_KEY"
         )

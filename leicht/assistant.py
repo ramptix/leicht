@@ -46,7 +46,7 @@ class Assistant:
 
         self.llm = get_llm(llm, tools=tools)
         self.messages = [{"role": "system", "content": description}]
-        self.tools = { tool.name: tool for tool in (tools or []) }
+        self.tools = {tool.name: tool for tool in (tools or [])}
 
     @overload
     def run(
@@ -123,16 +123,18 @@ class Assistant:
             }
         )
 
-        functions = res.get('functions')
-        
+        functions = res.get("functions")
+
         if functions:
             for func in functions:
                 if func[0] in self.tools:
                     res = self.tools[func[0]].__call__()
-                    self.messages.append({ 
-                        "role": "system", 
-                        "content": f"I executed {func[0]}(), results:\n{res}"
-                    })
+                    self.messages.append(
+                        {
+                            "role": "system",
+                            "content": f"I executed {func[0]}(), results:\n{res}",
+                        }
+                    )
 
     def __repr__(self) -> str:
         description = self.messages[0]["content"]
