@@ -44,9 +44,9 @@ class Assistant:
             except:  # noqa: E722
                 ...  # Use the description
 
-        self.llm = get_llm(llm, tools=tools)
-        self.messages = [{"role": "system", "content": description}]
         self.tools = {tool.name: tool for tool in (tools or [])}
+        self.llm = get_llm(llm, tools=[tool.prompt for tool in (tools or [])])
+        self.messages = [{"role": "system", "content": description}]
 
     @overload
     def run(
@@ -111,30 +111,43 @@ class Assistant:
             # Message(role="user", content=inquiry)
             self.messages.append({"role": "user", "content": inquiry})
 
-        res = self.llm(
-            {
-                "max_tokens": max_tokens,
-                "seed": seed,
-                "stop": stop,
-                "stream": stream,
-                "temperature": temperature,
-                "top_p": top_p,
-                "messages": self.messages,
-            }
-        )
+        payload = {
+            "max_tokens": max_tokens,
+            "seed": seed,
+            "stop": stop,
+            "stream": stream,
+            "temperature": temperature,
+            "top_p": top_p,
+        }
+        res = self._request(payload, notools=False)
 
         functions = res.get("functions")
-
         if functions:
             for func in functions:
+                # func[0] = name (str)
+                # func[1] = arguments (unparsed, str)
                 if func[0] in self.tools:
-                    res = self.tools[func[0]].__call__()
+                    args, kwargs = BaseTool.parse_args_from_text(func[1])
+                    res = self.tools[func[0]].__call__(*args, **kwargs)
                     self.messages.append(
                         {
-                            "role": "system",
-                            "content": f"I executed {func[0]}(), results:\n{res}",
+                            "role": "assistant",
+                            "content": f"I executed {func[0]}({func[1]}), results:\n{res}",
                         }
                     )
+                    return self._request(payload, notools=True)
+
+        else:
+            return res
+
+    def _request(self, p: dict, *, notools: bool = False):
+        with self.llm.notools(notools):
+            return self.llm(
+                {  # type: ignore
+                    **p,
+                    "messages": self.messages,
+                }
+            )
 
     def __repr__(self) -> str:
         description = self.messages[0]["content"]

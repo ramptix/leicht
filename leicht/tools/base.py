@@ -136,6 +136,11 @@ class BaseTool(Generic[P, T]):
             param = params[i]
             prompt += f"{param.name} - {docstring['args'][i]}\n"
 
+        if not params:
+            prompt += "No args."
+        elif prompt.endswith("\n"):
+            prompt = prompt[:-1]
+
         return prompt
 
     @staticmethod

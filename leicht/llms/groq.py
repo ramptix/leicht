@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from contextlib import contextmanager
 from types import ModuleType
 from typing import (
     Any,
@@ -124,7 +125,14 @@ class GroqResponse(BaseResponse):
 class Groq(BaseLLM):
     """Represents the Groq LLM."""
 
-    __slots__ = ("_headers", "_api_key", "_payload", "_json_mode", "_tools")
+    __slots__ = (
+        "_headers",
+        "_api_key",
+        "_payload",
+        "_json_mode",
+        "_tools",
+        "is_tool_self",
+    )
     _headers: Headers
     _api_key: str
     _payload: dict  # extra payload to append
@@ -132,6 +140,7 @@ class Groq(BaseLLM):
     _tools: List[str]
     _tool_self: Optional[Groq]
     _api_base = "https://api.groq.com/openai/v1"
+    is_tool_self: bool
 
     def __init__(
         self,
@@ -140,6 +149,7 @@ class Groq(BaseLLM):
         api_key: Optional[str] = None,
         json_mode: bool = False,
         tools: Optional[List[str]] = None,
+        tool_self: bool = False,
         **extra_payload,
     ):
         # if `api_key` is not provided, use the env
@@ -148,7 +158,6 @@ class Groq(BaseLLM):
             "Authorization": "Bearer %s" % self._api_key,
             "Content-Type": "application/json",
         }
-
         self._payload = {"model": model, **extra_payload}
 
         self.set(tools=tools or [])
@@ -156,6 +165,8 @@ class Groq(BaseLLM):
         self._json_mode = json_mode
         if json_mode:
             self._payload["response_format"] = {"type": "json_object"}
+
+        self.is_tool_self = tool_self
 
     def run(
         self, payload: GroqPayload, *, stream: Optional[bool] = None
@@ -236,12 +247,15 @@ class Groq(BaseLLM):
         calls = []
 
         for line in text.splitlines():
-            r = re.findall(r"^((?!\d)[a-zA-Z0-9_]+)\((.*)\)(?:.*)$", line)
+            r = re.findall(r"^((?!\d)[a-zA-Z0-9_\\]+)\((.*)\)(?:.*)$", line)
 
             if not r:
                 continue
 
-            calls.append(r[0])
+            calls.append((
+                r[0][0].replace('\\_', '_'), 
+                r[0][1]
+            ))
 
         return calls
 
@@ -269,12 +283,38 @@ class Groq(BaseLLM):
             if k == "tools":
                 self._tools = v
                 self._tool_self = (
-                    Groq(self._payload["model"], api_key=self._api_key, json_mode=False)
-                    if v
+                    Groq(
+                        self._payload["model"], 
+                        api_key=self._api_key, 
+                        json_mode=False,
+                        tool_self=True
+                    ) if v
                     else None
                 )
+            elif k == "fill_tools":
+                self._tools = v
+            elif k == "fill_tool_self":
+                self._tool_self = v
 
         return self
 
+    @contextmanager
+    def notools(self, _m: bool = True):
+        if _m:
+            print("NOTOOLS")
+            assert self._tool_self, "Tools are not available"
+
+            tools, tool_self = self._tools, self._tool_self
+            self.set(tools=[])
+            yield
+            self.set(fill_tools=tools, fill_tool_self=tool_self)
+            print("TOOLS")
+        else:
+            yield
+
     def __repr__(self):
-        return "Groq(api_key='gsk_***')"
+        return (
+            "Groq(api_key='gsk_***'"
+            + (", tool_self=True" if self.is_tool_self else "")
+            + ")"
+        )

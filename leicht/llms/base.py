@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import Any, Iterable, TypeVar, Union, Optional
 from typing_extensions import Self
 
@@ -16,6 +17,10 @@ class BaseLLM:
     def __call__(self, payload: ...) -> Any: ...
 
     def set(self, **kwargs) -> Self: ...
+
+    @contextmanager
+    def notools(self, _m: bool = True):
+        yield
 
 
 class BaseResponse:
