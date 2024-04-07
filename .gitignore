@@ -5,3 +5,4 @@ Pipfile
 Pipfile.lock
 .ruff_cache/
 activate.ps1
+hf-g4f/
