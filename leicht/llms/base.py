@@ -1,7 +1,7 @@
-from typing import Any, Iterable, TypeVar, Union
+from typing import Any, Iterable, TypeVar, Union, Optional
 from typing_extensions import Self
 
-from git import Optional
+from ..types import BasicLLMPayload
 
 T = TypeVar("T")
 
@@ -15,7 +15,7 @@ class BaseLLM:
 
     def __repr__(self) -> str: ...
 
-    def __call__(self, *args, **kwargs) -> Any: ...
+    def __call__(self, payload: BasicLLMPayload) -> Any: ...
 
     def set(self, **kwargs) -> Self: ...
 
@@ -43,7 +43,7 @@ class BaseResponse:
     def values(self) -> Iterable:
         return self._data.values()
 
-    def __getitem__(self, k: str) -> Any:
+    def __getitem__(self, k: str, /) -> Any:
         return self._data[k]
 
     def __repr__(self) -> str: ...

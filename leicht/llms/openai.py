@@ -46,7 +46,7 @@ class OpenAILike(BaseLLM):
     def chat_completions(self):
         response = self.openai.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": "write a poem about a tree"}]
+            messages=[{"role": "user", "content": "write a poem about a tree"}],
         )
         return response
 

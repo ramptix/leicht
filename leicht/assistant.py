@@ -1,10 +1,11 @@
 import re
-from typing import List, Optional, Union, overload
+from typing import List, Mapping, Optional, Union, overload
 
 from .llms import BaseLLM, Groq, OpenAI
 from .prompts import get_prompt
 from .types import Message, LLMType
 from .utils import clamp
+from .tools.base import BaseTool
 
 AnyLLM = Union[BaseLLM, Groq, OpenAI]
 
@@ -31,10 +32,10 @@ class Assistant:
     __slots__ = ("llm", "messages", "tools")
     llm: AnyLLM
     messages: List[Message]
-    tools: List[str]
+    tools: Mapping[str, BaseTool]
 
     def __init__(
-        self, description: str, *, llm: LLMType, tools: Optional[List[str]] = None
+        self, description: str, *, llm: LLMType, tools: Optional[List[BaseTool]] = None
     ):
         if re.match(r"^(?:[a-zA-Z\d\.-]+\/)?[a-zA-Z\d\.-]+$", description):
             # Is a prompt name specification
@@ -45,7 +46,7 @@ class Assistant:
 
         self.llm = get_llm(llm, tools=tools)
         self.messages = [{"role": "system", "content": description}]
-        self.tools = tools or []
+        self.tools = { tool.name: tool for tool in (tools or []) }
 
     @overload
     def run(
@@ -122,7 +123,16 @@ class Assistant:
             }
         )
 
-        return res
+        functions = res.get('functions')
+        
+        if functions:
+            for func in functions:
+                if func[0] in self.tools:
+                    res = self.tools[func[0]].__call__()
+                    self.messages.append({ 
+                        "role": "system", 
+                        "content": f"I executed {func[0]}(), results:\n{res}"
+                    })
 
     def __repr__(self) -> str:
         description = self.messages[0]["content"]

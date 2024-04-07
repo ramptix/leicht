@@ -245,8 +245,8 @@ class Groq(BaseLLM):
 
         return calls
 
-    def __call__( # type: ignore
-        self, payload: GroqPayload, *, stream: bool = False
+    def __call__(
+        self, payload: GroqPayload
     ) -> Union[GroqResponse, FunctionCallResponse]:
         """Runs a call.
 
@@ -262,7 +262,7 @@ class Groq(BaseLLM):
             if fn:
                 return {"functions": fn}
 
-        return self.run(payload, stream=stream)
+        return self.run(payload, stream=payload["stream"])
 
     def set(self, **kwargs):
         for k, v in kwargs.items():
