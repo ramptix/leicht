@@ -18,10 +18,6 @@ class BaseLLM:
 
     def set(self, **kwargs) -> Self: ...
 
-    @contextmanager
-    def notools(self, _m: bool = True):
-        yield
-
 
 class BaseResponse:
     __slots__ = ("_stream", "_data", "_pipe")
@@ -32,21 +28,30 @@ class BaseResponse:
     def __init__(self, data: dict, *, stream: bool = False, pipe: Any): ...
 
     def copy(self) -> dict:
-        return self._data.copy()
+        return self.data.copy()
 
     def get(self, k: str, default: Optional[T] = None, /) -> Union[Any, T]:
-        return self._data.get(k, default)
+        return self.data.get(k, default)
 
     def items(self) -> Iterable:
-        return self._data.items()
+        return self.data.items()
 
     def keys(self) -> Iterable:
-        return self._data.keys()
+        return self.data.keys()
 
     def values(self) -> Iterable:
-        return self._data.values()
+        return self.data.values()
 
     def __getitem__(self, k: str, /) -> Any:
-        return self._data[k]
+        return self.data[k]
 
     def __repr__(self) -> str: ...
+
+    @property
+    def data(self) -> dict:
+        if not self._data:
+            self._data = self.dict()
+
+        return self._data
+
+    def dict(self) -> dict: ...

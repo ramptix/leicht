@@ -77,6 +77,9 @@ class GroqResponse(BaseResponse):
     def __iter__(self):
         def iterator():
             if not self._stream or self._json_mode:
+                if self._data:
+                    raise TypeError("Streaming is completed.")
+    
                 raise TypeError("This is not a stream or streaming is completed.")
 
             pipe = self._pipe
@@ -115,6 +118,10 @@ class GroqResponse(BaseResponse):
 
         return iterator()
 
+    def dict(self):
+        list(self.__iter__())
+        return self._data
+
     def __next__(self):
         return self.__iter__()
 
@@ -123,7 +130,17 @@ class GroqResponse(BaseResponse):
 
 
 class Groq(BaseLLM):
-    """Represents the Groq LLM."""
+    """Represents the Groq LLM.
+
+    Args:
+        model (Model): The model name.
+        api_key (str, optional): API key. If not provided, uses env ``GROQ_API_KEY``
+            instead.
+        json_mode (bool): JSON mode? **BETA**
+        tools (list[str], optional): List of tools in ``str``.
+        tool_self (bool): Is this a self instance for tools detection?
+        **extra_payload: Extra payload.
+    """
 
     __slots__ = (
         "_headers",

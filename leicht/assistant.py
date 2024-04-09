@@ -15,6 +15,8 @@ llm_mapping = {"openai": OpenAI, "groq": Groq}
 def get_llm(llm: LLMType, **kwargs) -> AnyLLM:
     if isinstance(llm, str):
         return llm_mapping[llm](**kwargs)
+    elif isinstance(llm, type):
+        return llm(**kwargs)
     else:
         return llm.set(**kwargs)
 
@@ -35,7 +37,12 @@ class Assistant:
     tools: Mapping[str, BaseTool]
 
     def __init__(
-        self, description: str, *, llm: LLMType, tools: Optional[List[BaseTool]] = None
+        self,
+        description: str,
+        *,
+        llm: LLMType,
+        tools: Optional[List[BaseTool]] = None,
+        **llm_kwargs,
     ):
         if re.match(r"^(?:[a-zA-Z\d\.-]+\/)?[a-zA-Z\d\.-]+$", description):
             # Is a prompt name specification
@@ -46,7 +53,7 @@ class Assistant:
 
         tools = tools or []
         self.tools = {tool.name: tool for tool in tools}
-        self.llm = get_llm(llm, tools=[tool.prompt for tool in tools])
+        self.llm = get_llm(llm, tools=[tool.prompt for tool in tools], **llm_kwargs)
         self.messages = [
             {
                 "role": "system",

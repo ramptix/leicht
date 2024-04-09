@@ -1,9 +1,9 @@
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Type, Union
 from typing_extensions import NotRequired, TypedDict
 
 from .llms import BaseLLM
 
-LLMType = Union[Literal["openai", "groq"], BaseLLM]
+LLMType = Union[Literal["openai", "groq", "g4f"], BaseLLM, Type[BaseLLM]]
 
 
 class Message(TypedDict):
