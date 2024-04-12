@@ -79,7 +79,7 @@ class GroqResponse(BaseResponse):
             if not self._stream or self._json_mode:
                 if self._data:
                     raise TypeError("Streaming is completed.")
-    
+
                 raise TypeError("This is not a stream or streaming is completed.")
 
             pipe = self._pipe

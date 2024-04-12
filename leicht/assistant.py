@@ -1,24 +1,11 @@
 import re
 from typing import List, Mapping, Optional, Union, overload
 
-from .llms import BaseLLM, Groq, OpenAI
+from .llms._pipeline import AnyLLM, get_llm
 from .prompts import get_prompt
 from .types import Message, LLMType
 from .utils import clamp
 from .tools.base import BaseTool
-
-AnyLLM = Union[BaseLLM, Groq, OpenAI]
-
-llm_mapping = {"openai": OpenAI, "groq": Groq}
-
-
-def get_llm(llm: LLMType, **kwargs) -> AnyLLM:
-    if isinstance(llm, str):
-        return llm_mapping[llm](**kwargs)
-    elif isinstance(llm, type):
-        return llm(**kwargs)
-    else:
-        return llm.set(**kwargs)
 
 
 class Assistant:
@@ -160,7 +147,7 @@ class Assistant:
             return res
 
     def _request(self, p: dict, *, notools: bool = False):
-        with self.llm.notools(notools):
+        with self.llm.notools(notools):  # type: ignore
             return self.llm(
                 {  # type: ignore
                     **p,

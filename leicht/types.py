@@ -3,7 +3,7 @@ from typing_extensions import NotRequired, TypedDict
 
 from .llms import BaseLLM
 
-LLMType = Union[Literal["openai", "groq", "g4f"], BaseLLM, Type[BaseLLM]]
+LLMType = Union[Literal["openai", "groq", "g4f", "hf"], BaseLLM, Type[BaseLLM]]
 
 
 class Message(TypedDict):
