@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
-from contextlib import contextmanager
 from types import ModuleType
 from typing import (
     Any,
@@ -21,7 +19,7 @@ from typing_extensions import Mapping, TypedDict
 import httpx
 
 from .base import BaseLLM, BaseResponse
-from ..prompts import get_prompt
+from ._fc import get_function_call
 from ..types import BasicLLMPayload, BasicLLMResponse
 
 if TYPE_CHECKING:
@@ -138,7 +136,6 @@ class Groq(BaseLLM):
             instead.
         json_mode (bool): JSON mode? **BETA**
         tools (list[str], optional): List of tools in ``str``.
-        tool_self (bool): Is this a self instance for tools detection?
         **extra_payload: Extra payload.
     """
 
@@ -148,16 +145,13 @@ class Groq(BaseLLM):
         "_payload",
         "_json_mode",
         "_tools",
-        "is_tool_self",
     )
     _headers: Headers
     _api_key: str
     _payload: dict  # extra payload to append
     _json_mode: bool
     _tools: List[str]
-    _tool_self: Optional[Groq]
     _api_base = "https://api.groq.com/openai/v1"
-    is_tool_self: bool
 
     def __init__(
         self,
@@ -166,7 +160,6 @@ class Groq(BaseLLM):
         api_key: Optional[str] = None,
         json_mode: bool = False,
         tools: Optional[List[str]] = None,
-        tool_self: bool = False,
         **extra_payload,
     ):
         # if `api_key` is not provided, use the env
@@ -177,13 +170,9 @@ class Groq(BaseLLM):
         }
         self._payload = {"model": model, **extra_payload}
 
-        self.set(tools=tools or [])
-
         self._json_mode = json_mode
         if json_mode:
             self._payload["response_format"] = {"type": "json_object"}
-
-        self.is_tool_self = tool_self
 
     def run(
         self, payload: GroqPayload, *, stream: Optional[bool] = None
@@ -221,115 +210,23 @@ class Groq(BaseLLM):
                 r.json(), stream=False, pipe=None, json_mode=self._json_mode
             )
 
-    def get_function_call(
-        self, text: str, payload: GroqPayload
-    ) -> Optional[List[Tuple[str, str]]]:
-        # Assert if _tool_self is available
-        # This also prevents the following code block from getting a type warning
-        assert self._tool_self, "'tools' are not available for this Groq session."
-
-        result = self._tool_self.run(
-            {
-                **payload,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": (
-                            "Messages:\n"
-                            + "\n".join(
-                                [
-                                    f"{m['role']}: {m['content']}"
-                                    for m in payload["messages"]
-                                ]
-                            )
-                            + get_prompt(
-                                "functions-groq",
-                                tools="\n\n".join(self._tools),
-                                most_commonly_used=self._tools[0],
-                                text=text,
-                            )
-                        ),
-                    }
-                ],
-            }
-        )
-
-        content: str = result["choices"][0]["message"].get("content", "")
-        run_tools = not content.lstrip().lstrip("\"'").lower().startswith("null")
-
-        return Groq.parse_fn_call(content) if run_tools else None
-
-    @staticmethod
-    def parse_fn_call(text: str) -> List[Tuple[str, str]]:
-        calls = []
-
-        for line in text.splitlines():
-            r = re.findall(r"^((?!\d)[a-zA-Z0-9_\\]+)\((.*)\)(?:.*)$", line)
-
-            if not r:
-                continue
-
-            calls.append((r[0][0].replace("\\_", "_"), r[0][1]))
-
-        return calls
-
     def __call__(
         self, payload: GroqPayload
     ) -> Union[GroqResponse, FunctionCallResponse]:
         """Runs a call.
 
+        Returns `FunctionCallResponse` if applicable for a function call.
+
         Args:
             payload (GroqPayload): The payload.
             stream (bool): Stream?
         """
-        messages = payload["messages"]
+        functions = get_function_call(payload["messages"], tools=self._tools)
 
-        if self._tool_self:
-            # tools are available
-            fn = self.get_function_call(messages[-1]["content"], payload)
-            if fn:
-                return {"functions": fn}
+        if functions:
+            return {"functions": functions}
 
         return self.run(payload, stream=payload["stream"])
 
-    def set(self, **kwargs):
-        for k, v in kwargs.items():
-            if k == "tools":
-                self._tools = v
-                self._tool_self = (
-                    Groq(
-                        self._payload["model"],
-                        api_key=self._api_key,
-                        json_mode=False,
-                        tool_self=True,
-                    )
-                    if v
-                    else None
-                )
-            elif k == "fill_tools":
-                self._tools = v
-            elif k == "fill_tool_self":
-                self._tool_self = v
-
-        return self
-
-    @contextmanager
-    def notools(self, _m: bool = True):
-        if _m:
-            # print("NOTOOLS")
-            assert self._tool_self, "Tools are not available"
-
-            tools, tool_self = self._tools, self._tool_self
-            self.set(tools=[])
-            yield
-            self.set(fill_tools=tools, fill_tool_self=tool_self)
-            # print("TOOLS")
-        else:
-            yield
-
     def __repr__(self):
-        return (
-            "Groq(api_key='gsk_***'"
-            + (", tool_self=True" if self.is_tool_self else "")
-            + ")"
-        )
+        return "Groq(api_key='gsk_***')"

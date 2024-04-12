@@ -1,7 +1,8 @@
 import re
 from typing import List, Mapping, Optional, Union, overload
 
-from .llms._pipeline import AnyLLM, get_llm
+from .llms.base import BaseLLM as AnyLLM
+from .llms._pipeline import get_llm
 from .prompts import get_prompt
 from .types import Message, LLMType
 from .utils import clamp
