@@ -1,6 +1,6 @@
 """Pipeline."""
 
-from typing import Literal, Union, overload
+from typing import Literal, Union
 
 from .base import BaseLLM
 from .groq import Groq
@@ -12,7 +12,10 @@ AnyLLM = Union[BaseLLM, Groq, OpenAI]
 
 llm_mapping = {"openai": OpenAI, "groq": Groq}
 
-def get_llm(llm: Union[Literal["hf"], LLMType], **kwargs) -> Union[AnyLLM, BasicLLMResponse]:
+
+def get_llm(
+    llm: Union[Literal["hf"], LLMType], **kwargs
+) -> Union[AnyLLM, BasicLLMResponse]:
     if isinstance(llm, str):
         return llm_mapping[llm](**kwargs)
     elif isinstance(llm, type):
@@ -20,9 +23,10 @@ def get_llm(llm: Union[Literal["hf"], LLMType], **kwargs) -> Union[AnyLLM, Basic
     else:
         return llm.set(**kwargs)
 
+
 def pipeline(__name: LLMType, **kwargs) -> BasicLLMResponse:
     if __name == "hf":
         return mistral_7b_instruct_v0_2_api(**kwargs)
 
     model = get_llm(__name)
-    return model(kwargs) # type: ignore
+    return model(kwargs)  # type: ignore
