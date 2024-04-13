@@ -2,7 +2,6 @@
 
 import os
 from importlib.machinery import SourceFileLoader
-from typing import Literal, Union
 
 from .base import BaseLLM
 from .hf import mistral_7b_instruct_v0_2_api
@@ -19,9 +18,9 @@ def get_llm(llm: LLMType, **kwargs) -> BaseLLM:
     get_llm(OpenAI, api_key="sk-xxx")  # un-initialized
     get_llm(OpenAI(), api_key="sk-xxx")  # initialized; sets extra keys
     ```
-    
+
     Args:
-        llm (LLMType): LLM type. Could be an initialized, uninitalized or 
+        llm (LLMType): LLM type. Could be an initialized, uninitalized or
             literal string reference of an LLM.
         **kwargs: Extra keyword-only arguments to pass to the LLM.
     """
@@ -34,6 +33,7 @@ def get_llm(llm: LLMType, **kwargs) -> BaseLLM:
         return llm(**kwargs)
     else:
         return llm.set(**kwargs)
+
 
 def pipeline(__name: LLMType, **kwargs) -> BasicLLMResponse:
     if __name == "hf":
