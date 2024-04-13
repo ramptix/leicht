@@ -11,16 +11,17 @@ from typing import (
     Literal,
     NotRequired,
     Optional,
-    Tuple,
     Union,
+    overload,
 )
 from typing_extensions import Mapping, TypedDict
 
 import httpx
 
 from .base import BaseLLM, BaseResponse
-from ._fc import get_function_call
+from ._fc import FunctionCallResponse, get_function_call
 from ..types import BasicLLMPayload, BasicLLMResponse
+from ..logger import logger
 
 if TYPE_CHECKING:
     json: ModuleType
@@ -50,10 +51,6 @@ class XGroq(TypedDict):
 
 class GroqResponseEnd(BasicLLMResponse):
     x_groq: XGroq
-
-
-class FunctionCallResponse(TypedDict):
-    functions: List[Tuple[str, str]]
 
 
 Response = Union[BasicLLMResponse, GroqResponseEnd]
@@ -174,7 +171,9 @@ class Groq(BaseLLM):
         if json_mode:
             self._payload["response_format"] = {"type": "json_object"}
 
-    def run(
+        self._tools = tools or []
+
+    def run(  # type: ignore
         self, payload: GroqPayload, *, stream: Optional[bool] = None
     ) -> GroqResponse:
         should_stream = payload["stream"] if stream is None else stream
@@ -210,9 +209,17 @@ class Groq(BaseLLM):
                 r.json(), stream=False, pipe=None, json_mode=self._json_mode
             )
 
+    @overload
     def __call__(
-        self, payload: GroqPayload
-    ) -> Union[GroqResponse, FunctionCallResponse]:
+        self, payload: GroqPayload, *, notools: Literal[True] = True
+    ) -> GroqResponse: ...
+
+    @overload
+    def __call__(
+        self, payload: GroqPayload, *, notools: Literal[False] = False
+    ) -> FunctionCallResponse: ...
+
+    def __call__(self, payload: GroqPayload, *, notools: bool = False):  # type: ignore
         """Runs a call.
 
         Returns `FunctionCallResponse` if applicable for a function call.
@@ -221,12 +228,20 @@ class Groq(BaseLLM):
             payload (GroqPayload): The payload.
             stream (bool): Stream?
         """
-        functions = get_function_call(payload["messages"], tools=self._tools)
+        if not notools:
+            functions = get_function_call(payload["messages"], tools=self._tools)
 
-        if functions:
-            return {"functions": functions}
+            if functions:
+                return FunctionCallResponse(functions=functions)
 
         return self.run(payload, stream=payload["stream"])
+
+    def set(self, **kwargs):
+        for k, v in kwargs.items():
+            if k == "tools":
+                self._tools = v
+                logger.info("Groq(): set tools")
+        return self
 
     def __repr__(self):
         return "Groq(api_key='gsk_***')"

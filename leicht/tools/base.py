@@ -184,6 +184,9 @@ class BaseTool(Generic[P, T]):
             kwargs[kwarg.arg] = kwarg.value.value
 
         return args, kwargs
+    
+    def __repr__(self):
+        return f"Tool(name={self.name!r}, fn={self.handler.__name__!r})"
 
 
 def tool(fn: Callable[P, T]) -> BaseTool[P, T]:

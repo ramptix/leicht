@@ -1,12 +1,14 @@
-import re
 from typing import List, Mapping, Optional, Union, overload
 
 from .llms.base import BaseLLM as AnyLLM
 from .llms._pipeline import get_llm
 from .prompts import get_prompt
 from .types import Message, LLMType
-from .utils import clamp
+from .utils import clamp, msgs_to_text
 from .tools.base import BaseTool
+from .logger import logger
+from .utils import prompt_alike
+from .conditional import Conditional, ConditionalCheckError
 
 
 class Assistant:
@@ -19,10 +21,11 @@ class Assistant:
         llm (LLMType): The LLM. Defaults to OpenAI (shortcut: ``"openai"``).
     """
 
-    __slots__ = ("llm", "messages", "tools")
+    __slots__ = ("llm", "messages", "tools", "conditionals")
     llm: AnyLLM
     messages: List[Message]
     tools: Mapping[str, BaseTool]
+    conditionals: List[Conditional]
 
     def __init__(
         self,
@@ -30,9 +33,10 @@ class Assistant:
         *,
         llm: LLMType,
         tools: Optional[List[BaseTool]] = None,
+        conditionals: Optional[List[Conditional]] = None,
         **llm_kwargs,
     ):
-        if re.match(r"^(?:[a-zA-Z\d\.-]+\/)?[a-zA-Z\d\.-]+$", description):
+        if prompt_alike(description):
             # Is a prompt name specification
             try:
                 description = get_prompt(description)
@@ -47,13 +51,17 @@ class Assistant:
                 "role": "system",
                 "content": description
                 + (
-                    "You can:\n"
-                    + "\n".join(((tool.caps or tool.description) for tool in tools))
+                    (
+                        "You can:\n"
+                        + "\n".join(((tool.caps or tool.description) for tool in tools))
+                        + "\n(all return real-time info)"
+                    )
                     if tools
                     else ""
                 ),
             }
         ]
+        self.conditionals = conditionals or []
 
     @overload
     def run(
@@ -93,6 +101,18 @@ class Assistant:
         seed: Optional[int] = None,
     ):
         """Run the assistant instance."""
+        logger.info("Assistant(): running")
+
+        if self.conditionals:
+            logger.info("Assistant(): checking conditionals...")
+            for con in self.conditionals:
+                logger.info(f"Assistant(): check - {con!r}")
+
+                if not con.check(msgs_to_text(inquiry)):
+                    raise ConditionalCheckError(
+                        f"Rejected due to conditional check: {con!r}"
+                    )
+
         if isinstance(inquiry, list):
             if not inquiry:
                 raise ValueError(
@@ -118,6 +138,7 @@ class Assistant:
             # Message(role="user", content=inquiry)
             self.messages.append({"role": "user", "content": inquiry})
 
+        logger.info("Assistant(): inferring if functions are needed")
         payload = {
             "max_tokens": max_tokens,
             "seed": seed,
@@ -126,39 +147,47 @@ class Assistant:
             "temperature": temperature,
             "top_p": top_p,
         }
-        res = self._request(payload, notools=False)
+        res = self.llm(
+            {
+                **payload,
+                "messages": self.messages,
+            }
+        )
 
-        functions = res.get("functions")
+        functions = res.copy().get("functions")
         if functions:
+            logger.info(f"Assistant(): detected function calling from {self.llm!r}")
+
             for func in functions:
                 # func[0] = name (str)
                 # func[1] = arguments (unparsed, str)
                 if func[0] in self.tools:
+                    logger.info(f"Assistant(): running function {func[0]}({func[1]})")
+
+                    # parse arguments and run
                     args, kwargs = BaseTool.parse_args_from_text(func[1])
                     res = self.tools[func[0]].__call__(*args, **kwargs)
+
                     self.messages.append(
                         {
                             "role": "system",
-                            "content": f"I executed {func[0]}({func[1]}), results:\n{res}",
+                            "content": f"I executed {func[0]}({func[1]}), results:\n{res}.\nReply the user.",
                         }
                     )
-                    return self._request(payload, notools=True)
+
+            logger.info("Assistant(): successfully ran all functions!")
+            logger.info("Assistant(): asking for general response...")
+            r = self.llm({**payload, "messages": self.messages}, notools=True)
+            logger.info("Assistant(): `run` instance complete")
+            return r
 
         else:
+            logger.info("Assistant(): `run` instance complete (no funcs)")
             return res
-
-    def _request(self, p: dict, *, notools: bool = False):
-        with self.llm.notools(notools):  # type: ignore
-            return self.llm(
-                {  # type: ignore
-                    **p,
-                    "messages": self.messages,
-                }
-            )
 
     def __repr__(self) -> str:
         description = self.messages[0]["content"]
-        return f"Assistant(description={clamp(description)!r}, len(tools)={len(self.tools)})"
+        return f"Assistant(description={clamp(description)!r}, tools={self.tools}, conditionals={self.conditionals})"
 
 
 def pipeline(description: str, llm: LLMType = "openai"): ...

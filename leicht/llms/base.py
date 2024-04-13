@@ -1,4 +1,6 @@
-from typing import Any, Iterable, TypeVar, Union, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, Iterable, List, Tuple, TypeVar, Union, Optional
 from typing_extensions import Self
 
 T = TypeVar("T")
@@ -13,7 +15,9 @@ class BaseLLM:
 
     def __repr__(self) -> str: ...
 
-    def __call__(self, payload: ...) -> Any: ...
+    def __call__(
+        self, payload: ..., **kwargs
+    ) -> Union[BaseResponse, Dict[str, List[Tuple[str, str]]]]: ...
 
     def set(self, **kwargs) -> Self: ...
 

@@ -22,15 +22,11 @@ class BasicLLMPayload(TypedDict):
     seed: Optional[int]
 
 
-class BasicLLMResponseDelta(TypedDict):
-    content: NotRequired[str]
-
-
 class BasicLLMResponseChoice(TypedDict):
     index: int
-    delta: BasicLLMResponseDelta
     # logprobs
     finish_reason: Optional[Literal["stop", "length"]]
+    message: Message
 
 
 class BasicLLMResponse(TypedDict):

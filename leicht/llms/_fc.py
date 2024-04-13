@@ -2,17 +2,24 @@
 
 import re
 from typing import List, Optional, Tuple
+from typing_extensions import TypedDict
 
 from ._pipeline import pipeline
 from ..types import Message, BasicLLMResponse
 from ..prompts import get_prompt
+from ..logger import logger
 
 FunctionCalls = List[Tuple[str, str]]
+
+
+class FunctionCallResponse(TypedDict):
+    functions: FunctionCalls
 
 
 def get_function_call(
     messages: List[Message], tools: List[str]
 ) -> Optional[FunctionCalls]:
+    logger.info("_fc: getting function call...")
     messages_text = "Given messages:\n" + "\n".join(
         (f"{m['role']}: {m['content']}" for m in messages)
     )
@@ -33,7 +40,10 @@ def get_function_call(
         ],
     )
 
-    content: str = res["choices"][0].get("content", "")
+    content: str = res["choices"][0]["message"].get("content", "").strip()
+
+    logger.info(f"_fc: function call (res): {content}")
+
     return (
         parse_function_call(content)
         if check_if_applicable_for_fn_call(content)
@@ -42,15 +52,20 @@ def get_function_call(
 
 
 def check_if_applicable_for_fn_call(content: str) -> bool:
-    return (
+    appl = (
         not content.lstrip()  # Clear spaces/indents
         .lstrip("\"'")  # Clear string quotes
         .lower()  # Convert to lower case
         .startswith("null")  # Startswith "null"? (AKA. no function call?)
     )
+    logger.info(f"_fc: function call applicable? {appl}")
+
+    return appl
 
 
 def parse_function_call(text: str) -> FunctionCalls:
+    logger.info("_fc: parsing function call...")
+
     calls = []
 
     for line in text.splitlines():
@@ -63,4 +78,5 @@ def parse_function_call(text: str) -> FunctionCalls:
 
         calls.append((r[0].replace("\\_", "_"), r[1]))
 
+    logger.info(f"_fc: function calls - {calls}")
     return calls
