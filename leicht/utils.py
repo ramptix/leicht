@@ -17,11 +17,9 @@ def clamp(t: str, m: int = 21):
 def prompt_alike(t: str):
     return re.match(r"^(?:[a-zA-Z\d\.-]+\/)?[a-zA-Z\d\.-]+$", t)
 
+
 def msgs_to_text(msgs: Union[List[Message], str]) -> str:
     if isinstance(msgs, str):
         return msgs
-    
-    return "\n".join([
-        f"{msg['role']}: {msg['content']}"
-        for msg in msgs
-    ])
+
+    return "\n".join([f"{msg['role']}: {msg['content']}" for msg in msgs])

@@ -14,7 +14,9 @@ class Conditional:
         **kwargs: Keyword-only arguments for the prompt.
     """
 
-    def __init__(self, prompt: str, __fillto: str, __note: Optional[str] = None, /, **kwargs):
+    def __init__(
+        self, prompt: str, __fillto: str, __note: Optional[str] = None, /, **kwargs
+    ):
         self._note = __note
         self._prompt = prompt
         self._kwargs = kwargs
@@ -22,17 +24,11 @@ class Conditional:
 
     def check(self, text: str, /) -> bool:
         """Checks the conditional.
-        
+
         Args:
             text (str): The text.
         """
-        return get_conditional(
-            self._prompt,
-            **{
-                **self._kwargs,
-                self._fillto: text
-            }
-        )
+        return get_conditional(self._prompt, **{**self._kwargs, self._fillto: text})
 
     def __repr__(self):
         return (
@@ -40,6 +36,7 @@ class Conditional:
             if self._note
             else ")"
         )
+
 
 class ConditionalCheckError(Exception):
     """Conditional check error."""
